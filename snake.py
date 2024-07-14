@@ -1,5 +1,6 @@
 import tkinter
 import random
+import gamedata
 from PIL import Image, ImageTk
 
 ROWS = 25
@@ -22,7 +23,7 @@ class Tile:
 
 window = tkinter.Tk()
 window.title("Snake By Ahmad Ali")
-window.resizable(False, False)
+# window.resizable(False, False)
 
 # Set canvas for game
 
@@ -70,7 +71,9 @@ snake_body = []
 game_over = False
 score = 0
 high_score = 0
-level = 10
+oa_highscore = gamedata.highscore
+oa_highplayer = gamedata.player
+level = 1
 
 # Load the semi-transparent image
 bg_image = Image.open("transparent_background.png")
@@ -78,10 +81,28 @@ bg_image = bg_image.resize((WINDOW_WIDTH, WINDOW_HEIGHT), Image.Resampling.LANCZ
 bg_photo = ImageTk.PhotoImage(bg_image)
 
 def change_direction(e): #e = Event
-    global velocityX, velocityY, game_over
-    
+    global velocityX, velocityY, game_over, score, high_score, snake_body, food, snake, oa_highscore
+    # print(e.keysym)
     if (game_over):
-        return
+        if (e.keysym == "space"):
+            # resetting Variables
+            snake_start = random.randint(0,25-1)
+            food_start = random.randint(0,25-1)
+
+            while snake_start == food_start:
+                food_start = random.randint(0,25-1)
+
+            snake = Tile(snake_start*TILE_SIZE, snake_start*TILE_SIZE) # Snake's Head
+            food = Tile(food_start*TILE_SIZE, food_start*TILE_SIZE) #food
+            velocityX = 0
+            velocityY= 0
+            snake_body = []
+            game_over = False
+            score = 0
+            oa_highscore = high_score
+            high_score = 0
+        else:
+            return
     
     if (e.keysym in up_controls and velocityY != 1):
         velocityX = 0
@@ -97,19 +118,20 @@ def change_direction(e): #e = Event
         velocityY = 0
 
 def move():
-    global snake, food, snake_body, game_over, score, high_score
+    global snake, food, snake_body, game_over, score, high_score, velocityY, velocityX
     
-    print(score)
-
     if (game_over):
         return
     
-    for tile in snake_body:
-        if (snake.x == tile.x and snake.y == tile.y):
-            if score - 1 < 0:
-                game_over = True
-            else:
-                score -= 1
+    for i in range(1, level + 1):
+        for tile in snake_body:
+            if (snake.x == tile.x and snake.y == tile.y):
+                if score - 1 <= 0:
+                    velocityX = 0
+                    velocityY = 0
+                    game_over = True
+                else:
+                    score -= 1
     
 
     # detect collision with food
@@ -161,7 +183,7 @@ def move():
 
 #Drawing each frames of game
 def draw():
-    global snake, food, snake_body, score, high_score, game_over
+    global snake, food, snake_body, score, high_score, game_over, oa_highscore
     move()
     
     canvas.delete('all')
@@ -177,11 +199,20 @@ def draw():
     canvas.create_rectangle(snake.x, snake.y, snake.x+TILE_SIZE, snake.y+TILE_SIZE, fill="lime green")
 
     # Display Game Over Message
+    # oa_highscore = -1
+    # game_over = True
     if (game_over):
         canvas.create_image(0, 0, anchor="nw", image=bg_photo)
-        canvas.create_text(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, font = "Arial 20", text = f"Game Over\nHigh Score: {high_score}", fill = "white")
+        if high_score > oa_highscore:
+            canvas.create_text(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, font = "Arial 20", text = f"Game Over\nHigh Score: {high_score}\n", fill = "white", justify = "center")
+            canvas.create_text(WINDOW_WIDTH/2, WINDOW_HEIGHT/2 + 33, font = "Arial 20", text = "*NEW RECORD*", fill = "yellow")
+            canvas.create_text(WINDOW_WIDTH/2, WINDOW_HEIGHT/2 + 58, font = "Arial 13", text = "(press space to restart)", fill = "white")
+        else:
+            canvas.create_text(WINDOW_WIDTH/2, WINDOW_HEIGHT/2, font = "Arial 20", text = f"Game Over\nHigh Score: {high_score}", fill = "white", justify = "center")
+            canvas.create_text(WINDOW_WIDTH/2, WINDOW_HEIGHT/2 + 45, font = "Arial 13", text = "(press space to restart)", fill = "white")
     else:
         canvas.create_text(30, 20, font = "Arial 10", text = f"Score: {score}", fill = "white")
+        
     #update frame
     window.after(100, draw) # 100ms = 10 frames / second. it will control speed basically
 
