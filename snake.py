@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 
 ROWS = 25
 COLS = 25
-TILE_SIZE = 25
+TILE_SIZE = 15
 
 WINDOW_WIDTH = TILE_SIZE * COLS
 WINDOW_HEIGHT = TILE_SIZE * ROWS
@@ -81,7 +81,7 @@ score = 0
 high_score = 0
 oa_highscore = gamedata.highscore
 oa_highplayer = gamedata.player
-level = 1
+level = 100
 speed = 100
 food_is_eaten = False
 is_fullscreen = False
@@ -105,17 +105,17 @@ def update_dimensions():
 
 def change_direction(e): #e = Event
     global velocityX, velocityY, game_over, score, high_score, snake_body, food, snake, oa_highscore, speed, is_fullscreen
-    # print(e.keysym)
+    print(e.keysym)
         
     if (e.keysym == "F11" and is_fullscreen != True):
         is_fullscreen = True
         window.attributes('-fullscreen', True)
         window.update()
-    elif (e.keysym == "F11" and is_fullscreen != False):
+    elif (e.keysym == "F11" or e.keysym == "Escape" and is_fullscreen != False):
         is_fullscreen = False
         window.attributes('-fullscreen', False)
         window.update()
-        
+
     if (game_over):
         if (e.keysym == "space"):
             # resetting Variables
@@ -185,12 +185,14 @@ def move():
 
     # detect collision with food
     if food_is_eaten:
-        snake_body.append(Tile(food.x, food.y))
-        score += level
+        # This code adds score basd on level only
+        # snake_body.append(Tile(food.x, food.y))
+        # score += level
+
         # this code adds body part for each score
-        # for i in range(1, level + 1):
-        #     snake_body.append(Tile(food.x, food.y))
-        #     score += 1
+        for i in range(1, level + 1):
+            snake_body.append(Tile(food.x, food.y))
+            score += 1
         
         food.x = random.randint(0, COLS-1) * TILE_SIZE
         food.y = random.randint(0, ROWS-1) * TILE_SIZE
@@ -232,6 +234,36 @@ def move():
         snake.y = 0
     elif snake.y < 0:
         snake.y = window_height - TILE_SIZE
+
+    # Check if food is out of
+    if food.x >= window_width:
+        food.x = random.randint(0, COLS-1) * TILE_SIZE
+        food.y = random.randint(0, ROWS-1) * TILE_SIZE
+        for tile in snake_body:
+            if (food.x == tile.x and food.y == tile.y):
+                food.x = random.randint(0, COLS-1) * TILE_SIZE
+                food.y = random.randint(0, ROWS-1) * TILE_SIZE
+    elif food.x < 0:
+        food.x = random.randint(0, COLS-1) * TILE_SIZE
+        food.y = random.randint(0, ROWS-1) * TILE_SIZE
+        for tile in snake_body:
+            if (food.x == tile.x and food.y == tile.y):
+                food.x = random.randint(0, COLS-1) * TILE_SIZE
+                food.y = random.randint(0, ROWS-1) * TILE_SIZE
+    if food.y >= window_height:
+        food.x = random.randint(0, COLS-1) * TILE_SIZE
+        food.y = random.randint(0, ROWS-1) * TILE_SIZE
+        for tile in snake_body:
+            if (food.x == tile.x and food.y == tile.y):
+                food.x = random.randint(0, COLS-1) * TILE_SIZE
+                food.y = random.randint(0, ROWS-1) * TILE_SIZE
+    elif food.y < 0:
+        food.x = random.randint(0, COLS-1) * TILE_SIZE
+        food.y = random.randint(0, ROWS-1) * TILE_SIZE
+        for tile in snake_body:
+            if (food.x == tile.x and food.y == tile.y):
+                food.x = random.randint(0, COLS-1) * TILE_SIZE
+                food.y = random.randint(0, ROWS-1) * TILE_SIZE
     
 
 #Drawing each frames of game
