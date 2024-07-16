@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 
 ROWS = 25
 COLS = 25
-TILE_SIZE = 15
+TILE_SIZE = 25
 
 WINDOW_WIDTH = TILE_SIZE * COLS
 WINDOW_HEIGHT = TILE_SIZE * ROWS
@@ -81,19 +81,31 @@ score = 0
 high_score = 0
 oa_highscore = gamedata.highscore
 oa_highplayer = gamedata.player
-level = 100
+level = 1
 speed = 100
 food_is_eaten = False
 is_fullscreen = False
+playing = False
+is_pause = False
 
-# Load the semi-transparent image
-bg_image = Image.open("transparent_background.png")
-bg_photo = None  # Declare bg_photo outside the function
+# Load the semi-transparent game oover image
+dark_background_image = Image.open("transparent_background.png")
+dark_background_photo = None  # Declare dark_background_photo outside the function
+
+# Load the Menu Background image
+menu_background_image = Image.open("menu-background.png")
+menu_background_photo = None  # Declare menu_background_photo outside the function
+
 
 def resize_background_image():
-    global bg_photo
-    resized_image = bg_image.resize((window_width, window_height), Image.Resampling.LANCZOS)
-    bg_photo = ImageTk.PhotoImage(resized_image)
+    global dark_background_photo, menu_background_photo
+
+    resized_dark_background_image = dark_background_image.resize((window_width, window_height), Image.Resampling.LANCZOS)
+    dark_background_photo = ImageTk.PhotoImage(resized_dark_background_image)
+
+    # resized_menu_background_image = menu_background_image.resize((window_width, window_height), Image.Resampling.LANCZOS)
+    # menu_background_photo = ImageTk.PhotoImage(resized_menu_background_image)
+    menu_background_photo = ImageTk.PhotoImage(menu_background_image)
 
 def update_dimensions():
     global window_width, window_height, COLS, ROWS, snake, food, TILE_SIZE
@@ -103,10 +115,42 @@ def update_dimensions():
     ROWS = window_height // TILE_SIZE
     resize_background_image()
 
-def change_direction(e): #e = Event
+def restart():
     global velocityX, velocityY, game_over, score, high_score, snake_body, food, snake, oa_highscore, speed, is_fullscreen
-    print(e.keysym)
-        
+    
+    # resetting Variables
+    snake_start = random.randint(0,25-1)
+    food_start = random.randint(0,25-1)
+
+    while snake_start == food_start:
+        food_start = random.randint(0,25-1)
+
+    snake = Tile(snake_start*TILE_SIZE, snake_start*TILE_SIZE) # Snake's Head
+    food = Tile(food_start*TILE_SIZE, food_start*TILE_SIZE) #food
+    velocityX = 0
+    velocityY= 0
+    snake_body = []
+    game_over = False
+    score = 0
+    oa_highscore = high_score
+    high_score = 0
+    speed = 100
+
+def change_direction(e): #e = Event
+    global velocityX, velocityY, game_over, score, high_score, snake_body, food, snake, oa_highscore, speed, is_fullscreen, playing, is_pause, temp_speed
+    # print(e.keysym)
+    
+    if (e.keysym == "Return" and playing == False):
+        playing = True
+    elif (e.keysym == "x" and playing):
+        playing = False
+        restart()
+    
+    if (e.keysym == "p" and is_pause == False):
+        is_pause = True
+    elif (e.keysym == "p" and is_pause):
+        is_pause = False
+
     if (e.keysym == "F11" and is_fullscreen != True):
         is_fullscreen = True
         window.attributes('-fullscreen', True)
@@ -117,24 +161,12 @@ def change_direction(e): #e = Event
         window.update()
 
     if (game_over):
-        if (e.keysym == "space"):
-            # resetting Variables
-            snake_start = random.randint(0,25-1)
-            food_start = random.randint(0,25-1)
-
-            while snake_start == food_start:
-                food_start = random.randint(0,25-1)
-
-            snake = Tile(snake_start*TILE_SIZE, snake_start*TILE_SIZE) # Snake's Head
-            food = Tile(food_start*TILE_SIZE, food_start*TILE_SIZE) #food
-            velocityX = 0
-            velocityY= 0
-            snake_body = []
-            game_over = False
-            score = 0
-            oa_highscore = high_score
-            high_score = 0
-            speed = 100
+        is_pause = False
+        if (e.keysym == "space" and playing):
+            restart()
+        elif (e.keysym == "x" and playing):
+            playing = False
+            restart()   
         else:
             return
     
@@ -152,7 +184,7 @@ def change_direction(e): #e = Event
         velocityY = 0
         
 def move():
-    global snake, food, snake_body, game_over, score, high_score, velocityY, velocityX, food_is_eaten
+    global snake, food, snake_body, game_over, score, high_score, velocityY, velocityX, food_is_eaten, is_pause
     if (game_over):
         return
     
@@ -171,7 +203,6 @@ def move():
     while (food.y % TILE_SIZE != 0):
         food.y += 1
 
-
     for i in range(1, level + 1):
         for tile in snake_body:
             if (snake.x == tile.x and snake.y == tile.y):
@@ -186,13 +217,13 @@ def move():
     # detect collision with food
     if food_is_eaten:
         # This code adds score basd on level only
-        # snake_body.append(Tile(food.x, food.y))
-        # score += level
+        snake_body.append(Tile(food.x, food.y))
+        score += level
 
         # this code adds body part for each score
-        for i in range(1, level + 1):
-            snake_body.append(Tile(food.x, food.y))
-            score += 1
+        # for i in range(1, level + 1):
+        #     snake_body.append(Tile(food.x, food.y))
+        #     score += 1
         
         food.x = random.randint(0, COLS-1) * TILE_SIZE
         food.y = random.randint(0, ROWS-1) * TILE_SIZE
@@ -264,52 +295,65 @@ def move():
             if (food.x == tile.x and food.y == tile.y):
                 food.x = random.randint(0, COLS-1) * TILE_SIZE
                 food.y = random.randint(0, ROWS-1) * TILE_SIZE
-    
 
 #Drawing each frames of game
 def draw():
-    global snake, food, snake_body, score, high_score, game_over, oa_highscore, speed, window_height, window_width
-    move()
-    dimensions = [snake.x, snake.y, food.x, food.y, window_width, window_height, speed]
-    print(dimensions)
-    
+    global snake, food, snake_body, score, high_score, game_over, oa_highscore, speed, window_height, window_width, playing, is_pause
+
     canvas.delete('all')
+    if playing:
+        if not is_pause:
+            move()
 
-    #draw Food1
-    canvas.create_rectangle(food.x, food.y, food.x+TILE_SIZE, food.y+TILE_SIZE, fill = "red")
+        # dimensions = [snake.x, snake.y, food.x, food.y, window_width, window_height, speed]
+        # print(dimensions)
 
-    # Draw Snake Bosy
-    for tile in snake_body:
-        canvas.create_rectangle(tile.x, tile.y, tile.x + TILE_SIZE, tile.y + TILE_SIZE, fill = 'dark green')
+        #draw Food1
+        canvas.create_rectangle(food.x, food.y, food.x+TILE_SIZE, food.y+TILE_SIZE, fill = "red")
 
-    #draw snake
-    canvas.create_rectangle(snake.x, snake.y, snake.x+TILE_SIZE, snake.y+TILE_SIZE, fill="lime green")
+        # Draw Snake Bosy
+        for tile in snake_body:
+            canvas.create_rectangle(tile.x, tile.y, tile.x + TILE_SIZE, tile.y + TILE_SIZE, fill = 'dark green')
 
-    # Display Game Over Message
-    # oa_highscore = -1
-    # game_over = True
-    if (game_over):
-        canvas.create_image(0, 0, anchor="nw", image=bg_photo)
-        if high_score > oa_highscore:
-            canvas.create_text(window_width/2, window_height/2, font = "Arial 20", text = f"Game Over\nHigh Score: {high_score}\n", fill = "white", justify = "center")
-            canvas.create_text(window_width/2, window_height/2 + 33, font = "Arial 20", text = "*NEW RECORD*", fill = "yellow")
-            canvas.create_text(window_width/2, window_height/2 + 58, font = "Arial 13", text = "(press space to restart)", fill = "white")
+        #draw snake
+        canvas.create_rectangle(snake.x, snake.y, snake.x+TILE_SIZE, snake.y+TILE_SIZE, fill="lime green")
+
+        # Display Game Over Message
+        # oa_highscore = -1
+        # game_over = True
+        if (game_over):
+            canvas.create_image(0, 0, anchor="nw", image=dark_background_photo)
+            if high_score > oa_highscore:
+                canvas.create_text(window_width/2, window_height/2, font = "Arial 20", text = f"Game Over\nHigh Score: {high_score}\n", fill = "white", justify = "center")
+                canvas.create_text(window_width/2, window_height/2 + 33, font = "Arial 20", text = "*NEW RECORD*", fill = "yellow")
+                canvas.create_text(window_width/2, window_height/2 + 58, font = "Arial 13", text = "(press space to restart)", fill = "white")
+            else:
+                canvas.create_text(window_width/2, window_height/2, font = "Arial 20", text = f"Game Over\nHigh Score: {high_score}", fill = "white", justify = "center")
+                canvas.create_text(window_width/2, window_height/2 + 45, font = "Arial 13", text = "(press space to restart)", fill = "white")
         else:
-            canvas.create_text(window_width/2, window_height/2, font = "Arial 20", text = f"Game Over\nHigh Score: {high_score}", fill = "white", justify = "center")
-            canvas.create_text(window_width/2, window_height/2 + 45, font = "Arial 13", text = "(press space to restart)", fill = "white")
-    else:
-        canvas.create_text(30, 20, font = "Arial 10", text = f"Score: {score}", fill = "white")
-        
-    #update frame
-    if food_is_eaten:
-        speed *= 0.99
-    # print(speed)
-    
-    # manual adaptation for fps
+            canvas.create_text(window_width/2, 20, font = "Arial 13", text = f"Score: {score}", fill = "white")
+            canvas.create_text(50, 20, font = "Arial 10", text = f"High Score {oa_highscore}", fill = "white")
+            canvas.create_text(window_width-30, 20, font = "Arial 10", text = f"Level: {level}", fill = "white")
 
-    # time.sleep(speed)
-    # canvas.update()
-    # draw()
+        if is_pause:
+            canvas.create_image(0, 0, anchor="nw", image=dark_background_photo)
+            canvas.create_text(window_width/2, window_height/2, font = "Arial 50", text = "Pause", fill="white")
+        # update frame
+        if food_is_eaten:
+            speed *= 0.99
+        # print(speed)
+        
+        # manual adaptation for fps
+
+        # time.sleep(speed)
+        # canvas.update()
+        # draw()
+    else:
+        canvas.create_image(0, 0, anchor="nw", image=menu_background_photo)
+        canvas.create_image(0, 0, anchor="nw", image=dark_background_photo)
+        canvas.create_text(window_width/2, window_height/2 - 50, font = "Arial 50", text = "Snake", fill = "white")
+        canvas.create_text(window_width/2, window_height/2 + 20, font = "Arial 20", text = "Press Enter to start", fill = "white")
+    
     window.after(int(speed), draw) # 100ms = 10 frames / second. it will control speed basically
 
 def on_resize(event):
