@@ -25,7 +25,7 @@ window = tkinter.Tk()
 window.title("Snake By Your Daddy")
 window.attributes('-fullscreen', False)
 
-# window.resizable(False, False)
+# window.resizable(False, False) # to make window resizable, will enable this feature when setting page is implemented
 
 # Set canvas for game
 
